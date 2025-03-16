@@ -40,7 +40,7 @@ fn main() -> Result<(), io::Error> {
 
 fn run_app<B: Backend>(terminal: &mut Terminal<B>) -> io::Result<()> {
     let mut command_input = String::new();
-    let mut output = String::new();
+    let mut output = Spans::from("");
     let mut resources = vec![
         ("Firestone", 0, "The main resource, used for powering advanced tools and upgrading Pyrobase."),
         ("Emberash", 0, "Byproduct of gathered fire materials, used to craft basic tools."),
@@ -122,7 +122,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>) -> io::Result<()> {
             f.render_widget(command_paragraph, chunks[1]);
 
             let output_block = Block::default().title("Output").borders(Borders::ALL);
-            let output_paragraph = Paragraph::new(output.as_ref())
+            let output_paragraph = Paragraph::new(output.clone())
                 .block(output_block)
                 .wrap(Wrap { trim: true });
             f.render_widget(output_paragraph, chunks[2]);
@@ -150,13 +150,13 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>) -> io::Result<()> {
                                 resources.iter().find(|(name, _, _)| name.eq_ignore_ascii_case(query)).map(|(name, _, desc)| format!("{}: {}", name, desc))
                             };
                             if let Some(info) = about_info {
-                                output = info;
+                                output = Spans::from(info);
                             } else {
-                                output = "Resource not found.".to_string();
+                                output = Spans::from("Resource not found.");
                             }
                         }
                     } else if input == "clear" {
-                        output.clear();
+                        output = Spans::from("");
                     } else {
                         let mut suggestion = None;
                         for command in &commands {
@@ -166,11 +166,13 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>) -> io::Result<()> {
                             }
                         }
                         if let Some(suggested_command) = suggestion {
-                            output = format!("Unknown command: '{}'. Did you mean '{}'?", input, suggested_command);
-                            output = format!("\x1b[31m{}\x1b[0m", output); // Make text red
+                            output = Spans::from(vec![
+                                Span::styled(format!("Unknown command: '{}'. Did you mean '{}'", input, suggested_command), Style::default().fg(Color::Red))
+                            ]);
                         } else {
-                            output = format!("Unknown command: '{}'.", input);
-                            output = format!("\x1b[31m{}\x1b[0m", output); // Make text red
+                            output = Spans::from(vec![
+                                Span::styled(format!("Unknown command: '{}'.", input), Style::default().fg(Color::Red))
+                            ]);
                         }
                     }
                     command_input.clear();
